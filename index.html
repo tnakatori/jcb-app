@@ -158,7 +158,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
+  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, onSnapshot
@@ -201,10 +201,24 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 document.getElementById("loginBtn").addEventListener("click", () => {
-  signInWithPopup(auth, provider).catch((err) => {
-    console.error(err);
-    document.getElementById("loginError").style.display = "block";
+  signInWithRedirect(auth, provider).catch((err) => {
+    showFatalError("ログイン開始エラー: " + err.code + " " + err.message);
   });
+});
+
+getRedirectResult(auth).catch((err) => {
+  showFatalError("ログイン結果エラー: " + err.code + " " + err.message);
+});
+
+function showFatalError(msg) {
+  const el = document.getElementById("loginError");
+  el.textContent = msg;
+  el.style.display = "block";
+  console.error(msg);
+}
+
+window.addEventListener("error", (e) => {
+  showFatalError("スクリプトエラー: " + e.message);
 });
 
 document.getElementById("avatar").addEventListener("click", () => {
