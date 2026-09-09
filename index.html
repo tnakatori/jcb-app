@@ -158,7 +158,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut
+  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, onSnapshot
@@ -201,13 +201,9 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 document.getElementById("loginBtn").addEventListener("click", () => {
-  signInWithRedirect(auth, provider).catch((err) => {
-    showFatalError("ログイン開始エラー: " + err.code + " " + err.message);
+  signInWithPopup(auth, provider).catch((err) => {
+    showFatalError("ログインエラー: " + err.code + " " + err.message);
   });
-});
-
-getRedirectResult(auth).catch((err) => {
-  showFatalError("ログイン結果エラー: " + err.code + " " + err.message);
 });
 
 function showFatalError(msg) {
