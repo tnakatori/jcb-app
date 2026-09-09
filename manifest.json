@@ -1,0 +1,9 @@
+{
+  "name": "JCB利用明細",
+  "short_name": "JCB明細",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F4EFE3",
+  "theme_color": "#16233D",
+  "icons": []
+}

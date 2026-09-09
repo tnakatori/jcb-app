@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>JCB利用明細</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#16233D" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    background: #F4EFE3;
+    color: #16233D;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 420px; margin: 0 auto; padding-bottom: 32px; }
+
+  /* ---- ログイン画面 ---- */
+  #loginScreen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+  }
+  #loginScreen h1 { font-size: 20px; margin-bottom: 4px; }
+  #loginScreen p { color: #8A8172; font-size: 14px; margin-bottom: 24px; }
+  #loginBtn {
+    background: #16233D;
+    color: #F4EFE3;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #loginError { color: #B0533E; font-size: 13px; margin-top: 16px; display: none; }
+
+  /* ---- ヘッダー ---- */
+  .header { padding: 24px 16px 0; display: flex; justify-content: space-between; align-items: center; }
+  .header .eyebrow { font-size: 12px; letter-spacing: 0.02em; color: #8A8172; }
+  .header h2 { font-size: 19px; font-weight: 600; margin: 2px 0 0; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 999px;
+    background: #16233D; color: #C9A227;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    overflow: hidden;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* ---- タブ ---- */
+  .tabs { margin: 20px 16px 0; display: flex; gap: 4px; background: #EDE7D8; border-radius: 999px; padding: 4px; }
+  .tabs button {
+    flex: 1; padding: 8px 0; border-radius: 999px; border: none; background: none;
+    font-size: 14px; font-weight: 500; color: #6B6255; cursor: pointer;
+  }
+  .tabs button.active { background: #16233D; color: #F4EFE3; }
+
+  /* ---- 合計カード ---- */
+  .totalCard {
+    margin: 16px 16px 0; background: #FBF9F3; border: 1px solid #E7E0CC;
+    border-radius: 24px; padding: 20px 20px 16px;
+  }
+  .totalCard .sub { font-size: 13px; color: #8A8172; }
+  .totalRow { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 4px; }
+  .totalAmount { font-size: 32px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+  .compare { font-size: 13px; margin-bottom: 2px; }
+  .compare.up { color: #B0533E; }
+  .compare.down { color: #5C7A52; }
+
+  canvas#periodChart { margin-top: 12px; max-height: 100px; width: 100% !important; }
+
+  .budgetBar { margin-top: 12px; }
+  .budgetLabel { display: flex; justify-content: space-between; font-size: 12px; color: #8A8172; margin-bottom: 4px; }
+  .budgetTrack { height: 8px; border-radius: 999px; background: #EDE7D8; overflow: hidden; }
+  .budgetFill { height: 100%; border-radius: 999px; background: #16233D; }
+
+  /* ---- カテゴリ ---- */
+  .sectionLabel { font-size: 13px; color: #8A8172; margin: 20px 16px 8px; }
+  .catCard { margin: 0 16px; background: #FBF9F3; border: 1px solid #E7E0CC; border-radius: 16px; padding: 16px; }
+  .catRow { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .catRow:last-child { margin-bottom: 0; }
+  .catIcon { width: 32px; height: 32px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .catBody { flex: 1; min-width: 0; }
+  .catTop { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+  .catTop .amt { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .catTrack { height: 6px; border-radius: 999px; background: #EDE7D8; overflow: hidden; }
+  .catFill { height: 100%; border-radius: 999px; }
+
+  /* ---- 履歴 ---- */
+  .txCard { margin: 0 16px; background: #FBF9F3; border: 1px solid #E7E0CC; border-radius: 16px; overflow: hidden; }
+  .txRow { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #EDE7D8; }
+  .txRow:last-child { border-bottom: none; }
+  .txIcon { width: 36px; height: 36px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .txBody { flex: 1; min-width: 0; }
+  .txMerchant { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txDate { font-size: 12px; color: #8A8172; }
+  .txAmount { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  .empty { text-align: center; padding: 40px 20px; color: #8A8172; font-size: 14px; }
+  .loading { text-align: center; padding: 60px 20px; color: #8A8172; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <h1>JCB利用明細</h1>
+  <p>ご本人のGoogleアカウントでログインしてください</p>
+  <button id="loginBtn">Googleでログイン</button>
+  <p id="loginError">このアカウントではログインできません</p>
+</div>
+
+<div id="app" class="wrap" style="display:none;">
+  <div class="header">
+    <div>
+      <p class="eyebrow" id="cardNameLabel">ANA JCB CARD FIRST</p>
+      <h2>利用明細</h2>
+    </div>
+    <div class="avatar" id="avatar"></div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button data-period="day">日</button>
+    <button data-period="week" class="active">週</button>
+    <button data-period="month">月</button>
+    <button data-period="year">年</button>
+  </div>
+
+  <div class="totalCard">
+    <p class="sub" id="periodSub"></p>
+    <div class="totalRow">
+      <p class="totalAmount" id="totalAmount">¥0</p>
+      <p class="compare" id="compareLabel"></p>
+    </div>
+    <canvas id="periodChart" height="90"></canvas>
+    <div class="budgetBar" id="budgetBar" style="display:none;">
+      <div class="budgetLabel"><span id="budgetText"></span><span id="budgetPct"></span></div>
+      <div class="budgetTrack"><div class="budgetFill" id="budgetFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <p class="sectionLabel">カテゴリ別</p>
+  <div class="catCard" id="catCard"></div>
+
+  <p class="sectionLabel">利用履歴</p>
+  <div class="txCard" id="txCard"></div>
+</div>
+
+<div id="loadingScreen" class="loading" style="display:none;">読み込み中...</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, collection, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ==== Firebase設定 ====
+const firebaseConfig = {
+  apiKey: "AIzaSyAO4QfWy5rEy_O860RoLbhYJ-scmKfIhOA",
+  authDomain: "jcb-card-8f92f.firebaseapp.com",
+  projectId: "jcb-card-8f92f",
+  storageBucket: "jcb-card-8f92f.firebasestorage.app",
+  messagingSenderId: "894726627206",
+  appId: "1:894726627206:web:28507b3e3b38c24b675607",
+};
+
+// ==== 設定 ====
+const BUDGET_MONTHLY = 40000; // 月の予算(円)。好きな金額に変更してください
+
+// カテゴリ判定ルール: 利用先の店名にキーワードが含まれていたら分類
+const CATEGORY_RULES = [
+  { key: "cafe",    label: "カフェ",   icon: "☕", color: "#B5651D", words: ["スターバックス", "ドトール", "タリーズ", "コーヒー", "カフェ", "メルモ"] },
+  { key: "food",    label: "食料品",   icon: "🛒", color: "#C9A227", words: ["セブン", "ローソン", "ファミリーマート", "イオン", "スーパー", "西友", "マルエツ"] },
+  { key: "dine",    label: "飲食",     icon: "🍽", color: "#8A9A5B", words: ["食堂", "レストラン", "そば", "うどん", "ラーメン", "定食"] },
+  { key: "transit", label: "交通",     icon: "🚃", color: "#5B7C99", words: ["JR", "メトロ", "鉄道", "バス", "タクシー"] },
+  { key: "sub",     label: "サブスク", icon: "🎬", color: "#7A6FB0", words: ["Netflix", "Spotify", "Amazon Prime", "Apple", "Google"] },
+  { key: "util",    label: "公共料金", icon: "⚡", color: "#B0533E", words: ["電力", "ガス", "水道"] },
+];
+const OTHER_CATEGORY = { key: "other", label: "その他", icon: "🧾", color: "#8A8172" };
+
+function categorize(merchant) {
+  const rule = CATEGORY_RULES.find(r => r.words.some(w => merchant.includes(w)));
+  return rule || OTHER_CATEGORY;
+}
+function yen(n) { return "¥" + Math.round(n).toLocaleString("ja-JP"); }
+
+// ==== Firebase初期化 ====
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+document.getElementById("loginBtn").addEventListener("click", () => {
+  signInWithPopup(auth, provider).catch((err) => {
+    console.error(err);
+    document.getElementById("loginError").style.display = "block";
+  });
+});
+
+document.getElementById("avatar").addEventListener("click", () => {
+  if (confirm("ログアウトしますか？")) signOut(auth);
+});
+
+let allTx = [];
+let period = "week";
+let chart = null;
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    const avatar = document.getElementById("avatar");
+    if (user.photoURL) {
+      avatar.innerHTML = `<img src="${user.photoURL}" alt="">`;
+    } else {
+      avatar.textContent = (user.displayName || "?").slice(0, 2);
+    }
+    listenToTransactions();
+  } else {
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("app").style.display = "none";
+  }
+});
+
+function listenToTransactions() {
+  document.getElementById("loadingScreen").style.display = "block";
+  const colRef = collection(db, "transactions");
+  onSnapshot(colRef, (snap) => {
+    allTx = [];
+    snap.forEach((doc) => {
+      const d = doc.data();
+      // "2026/09/09 15:53" 形式をパース
+      const m = (d.usedAt || "").match(/(\d{4})\/(\d{2})\/(\d{2})\s+(\d{2}):(\d{2})/);
+      if (!m) return;
+      const date = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+      allTx.push({
+        id: doc.id,
+        date,
+        amount: Number(d.amount) || 0,
+        merchant: d.merchant || "不明",
+        cardName: d.cardName || "",
+      });
+    });
+    allTx.sort((a, b) => b.date - a.date);
+    document.getElementById("loadingScreen").style.display = "none";
+    render();
+  }, (err) => {
+    console.error(err);
+    document.getElementById("loadingScreen").textContent = "データの読み込みに失敗しました: " + err.message;
+  });
+}
+
+document.getElementById("tabs").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-period]");
+  if (!btn) return;
+  period = btn.dataset.period;
+  [...document.querySelectorAll("#tabs button")].forEach(b => b.classList.toggle("active", b === btn));
+  render();
+});
+
+function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
+function startOfWeek(d) { const x = startOfDay(d); const day = (x.getDay() + 6) % 7; x.setDate(x.getDate() - day); return x; }
+function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+function startOfYear(d) { return new Date(d.getFullYear(), 0, 1); }
+
+function render() {
+  if (allTx.length === 0) {
+    document.getElementById("totalAmount").textContent = yen(0);
+    document.getElementById("periodSub").textContent = "まだデータがありません";
+    document.getElementById("compareLabel").textContent = "";
+    document.getElementById("catCard").innerHTML = '<div class="empty">データがまだありません</div>';
+    document.getElementById("txCard").innerHTML = '<div class="empty">JCBの利用があると自動で表示されます</div>';
+    if (chart) { chart.destroy(); chart = null; }
+    return;
+  }
+
+  const now = new Date();
+  let rangeStart, prevStart, prevEnd, subLabel, series = null, seriesLabels = null;
+
+  if (period === "day") {
+    rangeStart = startOfDay(now);
+    prevStart = new Date(rangeStart); prevStart.setDate(prevStart.getDate() - 1);
+    prevEnd = rangeStart;
+    subLabel = now.toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" });
+  } else if (period === "week") {
+    rangeStart = startOfWeek(now);
+    prevStart = new Date(rangeStart); prevStart.setDate(prevStart.getDate() - 7);
+    prevEnd = rangeStart;
+    subLabel = `${rangeStart.getMonth()+1}/${rangeStart.getDate()} 〜`;
+    seriesLabels = ["月","火","水","木","金","土","日"];
+    series = new Array(7).fill(0);
+  } else if (period === "month") {
+    rangeStart = startOfMonth(now);
+    prevStart = new Date(rangeStart); prevStart.setMonth(prevStart.getMonth() - 1);
+    prevEnd = rangeStart;
+    subLabel = `${rangeStart.getFullYear()}年${rangeStart.getMonth()+1}月`;
+    const weeksInMonth = Math.ceil((new Date(rangeStart.getFullYear(), rangeStart.getMonth()+1, 0).getDate()) / 7);
+    seriesLabels = Array.from({length: weeksInMonth}, (_, i) => `${i+1}週`);
+    series = new Array(weeksInMonth).fill(0);
+  } else {
+    rangeStart = startOfYear(now);
+    prevStart = new Date(rangeStart); prevStart.setFullYear(prevStart.getFullYear() - 1);
+    prevEnd = rangeStart;
+    subLabel = `${rangeStart.getFullYear()}年`;
+    seriesLabels = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+    series = new Array(12).fill(0);
+  }
+
+  let total = 0, prevTotal = 0;
+  const catTotals = {};
+
+  allTx.forEach(t => {
+    if (t.date >= rangeStart) {
+      total += t.amount;
+      const cat = categorize(t.merchant);
+      catTotals[cat.key] = (catTotals[cat.key] || 0) + t.amount;
+
+      if (period === "week") {
+        const idx = (t.date.getDay() + 6) % 7;
+        series[idx] += t.amount;
+      } else if (period === "month") {
+        const idx = Math.floor((t.date.getDate() - 1) / 7);
+        series[idx] += t.amount;
+      } else if (period === "year") {
+        series[t.date.getMonth()] += t.amount;
+      }
+    } else if (t.date >= prevStart && t.date < prevEnd) {
+      prevTotal += t.amount;
+    }
+  });
+
+  document.getElementById("periodSub").textContent = subLabel;
+  document.getElementById("totalAmount").textContent = yen(total);
+
+  const diff = total - prevTotal;
+  const compareLabelMap = { day: "前日比", week: "先週比", month: "先月比", year: "前年比" };
+  const compareEl = document.getElementById("compareLabel");
+  if (prevTotal > 0 || total > 0) {
+    compareEl.textContent = `${compareLabelMap[period]} ${diff >= 0 ? "+" : ""}${yen(diff)}`;
+    compareEl.className = "compare " + (diff >= 0 ? "up" : "down");
+  } else {
+    compareEl.textContent = "";
+  }
+
+  // グラフ
+  const canvas = document.getElementById("periodChart");
+  if (series) {
+    canvas.style.display = "block";
+    renderChart(seriesLabels, series);
+  } else {
+    canvas.style.display = "none";
+    if (chart) { chart.destroy(); chart = null; }
+  }
+
+  // 予算バー(月のみ)
+  const budgetBar = document.getElementById("budgetBar");
+  if (period === "month") {
+    budgetBar.style.display = "block";
+    const pct = Math.min(100, Math.round((total / BUDGET_MONTHLY) * 100));
+    document.getElementById("budgetText").textContent = `今月の予算 ${yen(BUDGET_MONTHLY)}`;
+    document.getElementById("budgetPct").textContent = pct + "%";
+    document.getElementById("budgetFill").style.width = pct + "%";
+    document.getElementById("budgetFill").style.background = pct > 85 ? "#B0533E" : "#16233D";
+  } else {
+    budgetBar.style.display = "none";
+  }
+
+  // カテゴリ内訳
+  const catCard = document.getElementById("catCard");
+  const catEntries = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+  if (catEntries.length === 0) {
+    catCard.innerHTML = '<div class="empty">この期間の利用はありません</div>';
+  } else {
+    const max = catEntries[0][1];
+    catCard.innerHTML = catEntries.map(([key, amount]) => {
+      const meta = [...CATEGORY_RULES, OTHER_CATEGORY].find(c => c.key === key);
+      return `
+        <div class="catRow">
+          <div class="catIcon" style="background:${meta.color}22;">${meta.icon}</div>
+          <div class="catBody">
+            <div class="catTop"><span>${meta.label}</span><span class="amt">${yen(amount)}</span></div>
+            <div class="catTrack"><div class="catFill" style="width:${(amount/max)*100}%;background:${meta.color}"></div></div>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  // 履歴(直近20件、期間関係なく全体から)
+  const txCard = document.getElementById("txCard");
+  const recent = allTx.slice(0, 20);
+  txCard.innerHTML = recent.map(t => {
+    const meta = categorize(t.merchant);
+    const dateStr = `${t.date.getMonth()+1}/${t.date.getDate()} ${String(t.date.getHours()).padStart(2,"0")}:${String(t.date.getMinutes()).padStart(2,"0")}`;
+    return `
+      <div class="txRow">
+        <div class="txIcon" style="background:${meta.color}22;">${meta.icon}</div>
+        <div class="txBody">
+          <div class="txMerchant">${t.merchant}</div>
+          <div class="txDate">${dateStr}</div>
+        </div>
+        <div class="txAmount">${yen(t.amount)}</div>
+      </div>`;
+  }).join("");
+}
+
+function renderChart(labels, data) {
+  const ctx = document.getElementById("periodChart").getContext("2d");
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: period === "year" ? "bar" : "line",
+    data: {
+      labels,
+      datasets: [{
+        data,
+        borderColor: "#C9A227",
+        backgroundColor: period === "year" ? "#16233D" : "rgba(201,162,39,0.2)",
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => yen(c.raw) } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 }, color: "#8A8172" } },
+        y: { display: false }
+      }
+    }
+  });
+</script>
+</body>
+</html>
