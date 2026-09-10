@@ -204,7 +204,7 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -466,11 +466,23 @@ function render() {
     document.getElementById("historyLabel").textContent =
       period === "day" ? "この日の利用履歴" : period === "week" ? "この週の利用履歴" : "この月の利用履歴";
 
-    renderChart(view);
+    renderChartSafe(view);
     renderHistory(view);
     renderBreakdown(view);
   } catch (e) {
     showFatalError("render()エラー: " + e.message + "\n" + (e.stack || ""));
+  }
+}
+
+function renderChartSafe(view) {
+  try {
+    if (typeof Chart === "undefined") {
+      showFatalError("グラフの読み込みに失敗しました(通信環境をご確認ください)。他の項目は表示されます。");
+      return;
+    }
+    renderChart(view);
+  } catch (e) {
+    showFatalError("グラフ描画エラー: " + e.message);
   }
 }
 
