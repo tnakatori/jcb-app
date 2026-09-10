@@ -69,7 +69,7 @@
   }
   .totalCard .sub { font-size: 13px; color: #8A8172; }
   .totalAmount { font-size: 32px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; margin-top: 4px; }
-  canvas#periodChart { margin-top: 12px; max-height: 110px; width: 100% !important; }
+  canvas#periodChart { width: 100% !important; height: 100% !important; }
 
   .sectionLabel { font-size: 13px; color: #8A8172; margin: 20px 16px 8px; }
   .card { margin: 0 16px; background: #FBF9F3; border: 1px solid #E7E0CC; border-radius: 16px; padding: 16px; }
@@ -137,6 +137,8 @@
     <div class="avatar" id="avatar"></div>
   </div>
 
+  <p id="appError" style="display:none; margin:8px 16px 0; color:#B0533E; font-size:12px; white-space:pre-wrap;"></p>
+
   <div class="tabs" id="tabs">
     <button data-period="day">日</button>
     <button data-period="week" class="active">週</button>
@@ -164,7 +166,9 @@
     <div class="totalCard">
       <p class="sub">合計金額</p>
       <p class="totalAmount" id="totalAmount">¥0</p>
-      <canvas id="periodChart" height="100"></canvas>
+      <div style="position:relative; height:110px; margin-top:12px;">
+        <canvas id="periodChart"></canvas>
+      </div>
     </div>
 
     <p class="sectionLabel" id="historyLabel">利用履歴</p>
@@ -253,9 +257,12 @@ document.getElementById("avatar").addEventListener("click", () => {
 });
 
 function showFatalError(msg) {
-  const el = document.getElementById("loginError");
-  el.textContent = msg;
-  el.style.display = "block";
+  const loginEl = document.getElementById("loginError");
+  loginEl.textContent = msg;
+  loginEl.style.display = "block";
+  const appEl = document.getElementById("appError");
+  appEl.textContent = msg;
+  appEl.style.display = "block";
   console.error(msg);
 }
 window.addEventListener("error", (e) => showFatalError("スクリプトエラー: " + e.message));
