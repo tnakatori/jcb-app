@@ -139,6 +139,11 @@
 
   <p id="appError" style="display:none; margin:8px 16px 0; color:#B0533E; font-size:12px; white-space:pre-wrap;"></p>
 
+  <div id="notifyBar" style="display:none; margin:10px 16px 0; padding:10px 14px; background:#FBF9F3; border:1px solid #E7E0CC; border-radius:14px; align-items:center; justify-content:space-between; gap:8px;">
+    <span style="font-size:12px; color:#6B6255;">利用があったら通知でお知らせします</span>
+    <button id="notifyBtn" style="background:#16233D; color:#F4EFE3; border:none; border-radius:999px; padding:6px 12px; font-size:12px; cursor:pointer; flex-shrink:0;">通知を許可</button>
+  </div>
+
   <div class="tabs" id="tabs">
     <button data-period="day">日</button>
     <button data-period="week" class="active">週</button>
@@ -213,6 +218,9 @@ import {
 import {
   getFirestore, collection, onSnapshot, doc, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getMessaging, getToken, onMessage, isSupported
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAO4QfWy5rEy_O860RoLbhYJ-scmKfIhOA",
@@ -268,6 +276,42 @@ function showFatalError(msg) {
 window.addEventListener("error", (e) => showFatalError("スクリプトエラー: " + e.message));
 window.addEventListener("unhandledrejection", (e) => showFatalError("非同期エラー: " + (e.reason && e.reason.message || e.reason)));
 
+const VAPID_KEY = "BJz0B44WR-V8jFtoUv8SCc1mIVhdoPup5iYmqNvfUMvFNGSM8t5iV6ZQsCUuwWADu0E0e2LKuuFzMg5SrABVHVw";
+
+async function setupNotifications() {
+  try {
+    if (!(await isSupported())) return; // 対応していない環境(例: ホーム画面未追加のiPhone)では何もしない
+    if (Notification.permission === "granted") return; // すでに許可済みなら案内不要
+
+    const bar = document.getElementById("notifyBar");
+    bar.style.display = "flex";
+    document.getElementById("notifyBtn").addEventListener("click", async () => {
+      try {
+        const reg = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") { bar.style.display = "none"; return; }
+
+        const messaging = getMessaging(app);
+        const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+        if (token) {
+          await setDoc(doc(db, "fcmTokens", token), { createdAt: new Date().toISOString() });
+          bar.style.display = "none";
+        }
+      } catch (e) {
+        showFatalError("通知の設定に失敗しました: " + e.message);
+      }
+    });
+
+    // アプリを開いている間に通知が来た場合の表示
+    const messaging = getMessaging(app);
+    onMessage(messaging, (payload) => {
+      alert((payload.notification?.title || "") + "\n" + (payload.notification?.body || ""));
+    });
+  } catch (e) {
+    // 通知非対応環境などは静かに無視
+  }
+}
+
 let allTx = [];
 let period = "week";
 let offset = 0;
@@ -283,6 +327,7 @@ onAuthStateChanged(auth, (user) => {
     avatar.innerHTML = user.photoURL ? `<img src="${user.photoURL}" alt="">` : (user.displayName||"?").slice(0,2);
     listenToTransactions();
     listenToOverrides();
+    setupNotifications();
   } else {
     document.getElementById("loginScreen").style.display = "flex";
     document.getElementById("app").style.display = "none";
