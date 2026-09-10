@@ -148,6 +148,9 @@
   <p class="sectionLabel">カテゴリ別</p>
   <div class="catCard" id="catCard"></div>
 
+  <p class="sectionLabel">支払い先別</p>
+  <div class="catCard" id="merchantCard"></div>
+
   <p class="sectionLabel">利用履歴</p>
   <div class="txCard" id="txCard"></div>
 </div>
@@ -289,6 +292,7 @@ function render() {
     document.getElementById("periodSub").textContent = "まだデータがありません";
     document.getElementById("compareLabel").textContent = "";
     document.getElementById("catCard").innerHTML = '<div class="empty">データがまだありません</div>';
+    document.getElementById("merchantCard").innerHTML = '<div class="empty">データがまだありません</div>';
     document.getElementById("txCard").innerHTML = '<div class="empty">JCBの利用があると自動で表示されます</div>';
     if (chart) { chart.destroy(); chart = null; }
     return;
@@ -302,6 +306,8 @@ function render() {
     prevStart = new Date(rangeStart); prevStart.setDate(prevStart.getDate() - 1);
     prevEnd = rangeStart;
     subLabel = now.toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" });
+    seriesLabels = ["0時","4時","8時","12時","16時","20時"];
+    series = new Array(6).fill(0);
   } else if (period === "week") {
     rangeStart = startOfWeek(now);
     prevStart = new Date(rangeStart); prevStart.setDate(prevStart.getDate() - 7);
@@ -328,14 +334,23 @@ function render() {
 
   let total = 0, prevTotal = 0;
   const catTotals = {};
+  const merchantTotals = {}; // 店舗名ごとの合計(この期間内)
+  const periodTx = []; // この期間内の取引一覧(履歴表示用)
 
   allTx.forEach(t => {
     if (t.date >= rangeStart) {
       total += t.amount;
+      periodTx.push(t);
+
       const cat = categorize(t.merchant);
       catTotals[cat.key] = (catTotals[cat.key] || 0) + t.amount;
 
-      if (period === "week") {
+      merchantTotals[t.merchant] = (merchantTotals[t.merchant] || 0) + t.amount;
+
+      if (period === "day") {
+        const idx = Math.min(5, Math.floor(t.date.getHours() / 4));
+        series[idx] += t.amount;
+      } else if (period === "week") {
         const idx = (t.date.getDay() + 6) % 7;
         series[idx] += t.amount;
       } else if (period === "month") {
@@ -405,22 +420,47 @@ function render() {
     }).join("");
   }
 
-  // 履歴(直近20件、期間関係なく全体から)
+  // 支払い先別(同じ店の合計、この期間内)
+  const merchantCard = document.getElementById("merchantCard");
+  const merchantEntries = Object.entries(merchantTotals).sort((a, b) => b[1] - a[1]);
+  if (merchantEntries.length === 0) {
+    merchantCard.innerHTML = '<div class="empty">この期間の利用はありません</div>';
+  } else {
+    const maxM = merchantEntries[0][1];
+    merchantCard.innerHTML = merchantEntries.map(([name, amount]) => {
+      const meta = categorize(name);
+      const count = periodTx.filter(t => t.merchant === name).length;
+      return `
+        <div class="catRow">
+          <div class="catIcon" style="background:${meta.color}22;">${meta.icon}</div>
+          <div class="catBody">
+            <div class="catTop"><span>${name}${count > 1 ? `（${count}回）` : ""}</span><span class="amt">${yen(amount)}</span></div>
+            <div class="catTrack"><div class="catFill" style="width:${(amount/maxM)*100}%;background:${meta.color}"></div></div>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  // 履歴(選択中の期間内のみ、新しい順)
   const txCard = document.getElementById("txCard");
-  const recent = allTx.slice(0, 20);
-  txCard.innerHTML = recent.map(t => {
-    const meta = categorize(t.merchant);
-    const dateStr = `${t.date.getMonth()+1}/${t.date.getDate()} ${String(t.date.getHours()).padStart(2,"0")}:${String(t.date.getMinutes()).padStart(2,"0")}`;
-    return `
-      <div class="txRow">
-        <div class="txIcon" style="background:${meta.color}22;">${meta.icon}</div>
-        <div class="txBody">
-          <div class="txMerchant">${t.merchant}</div>
-          <div class="txDate">${dateStr}</div>
-        </div>
-        <div class="txAmount">${yen(t.amount)}</div>
-      </div>`;
-  }).join("");
+  const recent = periodTx.slice().sort((a, b) => b.date - a.date);
+  if (recent.length === 0) {
+    txCard.innerHTML = '<div class="empty">この期間の利用はありません</div>';
+  } else {
+    txCard.innerHTML = recent.map(t => {
+      const meta = categorize(t.merchant);
+      const dateStr = `${t.date.getMonth()+1}/${t.date.getDate()} ${String(t.date.getHours()).padStart(2,"0")}:${String(t.date.getMinutes()).padStart(2,"0")}`;
+      return `
+        <div class="txRow">
+          <div class="txIcon" style="background:${meta.color}22;">${meta.icon}</div>
+          <div class="txBody">
+            <div class="txMerchant">${t.merchant}</div>
+            <div class="txDate">${dateStr}</div>
+          </div>
+          <div class="txAmount">${yen(t.amount)}</div>
+        </div>`;
+    }).join("");
+  }
 }
 
 function renderChart(labels, data) {
