@@ -266,6 +266,7 @@ function showFatalError(msg) {
   console.error(msg);
 }
 window.addEventListener("error", (e) => showFatalError("スクリプトエラー: " + e.message));
+window.addEventListener("unhandledrejection", (e) => showFatalError("非同期エラー: " + (e.reason && e.reason.message || e.reason)));
 
 let allTx = [];
 let period = "week";
@@ -445,28 +446,32 @@ function updateDateNav() {
 }
 
 function render() {
-  updateDateNav();
+  try {
+    updateDateNav();
 
-  if (allTx.length === 0) {
-    document.getElementById("periodLabel").textContent = "";
-    document.getElementById("totalAmount").textContent = yen(0);
-    document.getElementById("txCard").innerHTML = '<div class="empty">JCBの利用があると自動で表示されます</div>';
-    document.getElementById("catCard").innerHTML = '<div class="empty">データがまだありません</div>';
-    document.getElementById("merchantCard").innerHTML = '<div class="empty">データがまだありません</div>';
-    document.getElementById("recurringSection").style.display = "none";
-    if (chart) { chart.destroy(); chart = null; }
-    return;
+    if (allTx.length === 0) {
+      document.getElementById("periodLabel").textContent = "";
+      document.getElementById("totalAmount").textContent = yen(0);
+      document.getElementById("txCard").innerHTML = '<div class="empty">JCBの利用があると自動で表示されます</div>';
+      document.getElementById("catCard").innerHTML = '<div class="empty">データがまだありません</div>';
+      document.getElementById("merchantCard").innerHTML = '<div class="empty">データがまだありません</div>';
+      document.getElementById("recurringSection").style.display = "none";
+      if (chart) { chart.destroy(); chart = null; }
+      return;
+    }
+
+    const view = VIEW_FNS[period](offset);
+    document.getElementById("periodLabel").textContent = view.label;
+    document.getElementById("totalAmount").textContent = yen(view.total);
+    document.getElementById("historyLabel").textContent =
+      period === "day" ? "この日の利用履歴" : period === "week" ? "この週の利用履歴" : "この月の利用履歴";
+
+    renderChart(view);
+    renderHistory(view);
+    renderBreakdown(view);
+  } catch (e) {
+    showFatalError("render()エラー: " + e.message + "\n" + (e.stack || ""));
   }
-
-  const view = VIEW_FNS[period](offset);
-  document.getElementById("periodLabel").textContent = view.label;
-  document.getElementById("totalAmount").textContent = yen(view.total);
-  document.getElementById("historyLabel").textContent =
-    period === "day" ? "この日の利用履歴" : period === "week" ? "この週の利用履歴" : "この月の利用履歴";
-
-  renderChart(view);
-  renderHistory(view);
-  renderBreakdown(view);
 }
 
 function renderChart(view) {
