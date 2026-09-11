@@ -128,8 +128,11 @@
   .settingsRow:last-child { border-bottom: none; }
   .settingsRow .label { font-size: 14px; color: #16233D; }
   .settingsRow .desc { font-size: 12px; color: #8A8172; margin-top: 2px; }
-  .switch { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
-  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; position: absolute; z-index: 1; }
+  .switch { position: relative; display: inline-block; width: 44px; height: 26px; flex-shrink: 0; }
+  .switch input {
+    position: absolute; top: 0; left: 0; opacity: 0; width: 100%; height: 100%; margin: 0;
+    cursor: pointer; z-index: 2; appearance: none; -webkit-appearance: none;
+  }
   .switch .track { position: absolute; inset: 0; background: #E7E0CC; border-radius: 999px; transition: background 0.15s; }
   .switch input:checked + .track { background: #16233D; }
   .switch .thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: #fff; border-radius: 999px; transition: left 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
@@ -322,7 +325,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
+  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, setPersistence, indexedDBLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, onSnapshot, doc, setDoc
@@ -363,6 +366,7 @@ function yen(n) { return "¥" + Math.round(n).toLocaleString("ja-JP"); }
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+setPersistence(auth, indexedDBLocalPersistence).catch((e) => console.warn("persistence設定エラー: " + e.message));
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
@@ -374,16 +378,10 @@ document.getElementById("avatar").addEventListener("click", () => {
 });
 
 function showFatalError(msg) {
-  // iOSのホーム画面アプリで時々発生する既知のストレージ問題は、
-  // 怖いエラー文言ではなく「再ログインしてください」という案内に変える
+  // iOSのホーム画面アプリで時々発生する既知の一時的エラー。
+  // 実際のログイン状態には影響しないため、ログイン画面には戻さず黙って無視する。
   if (msg.includes("missing initial state")) {
-    const loginEl = document.getElementById("loginError");
-    loginEl.textContent = "一時的にログイン情報が読み取れませんでした。もう一度ログインしてください。";
-    loginEl.style.display = "block";
-    document.getElementById("loginScreen").style.display = "flex";
-    document.getElementById("app").style.display = "none";
-    document.getElementById("bottomNav").style.display = "none";
-    console.error(msg);
+    console.warn(msg);
     return;
   }
   const loginEl = document.getElementById("loginError");
@@ -555,7 +553,7 @@ window.addEventListener("pagehide", () => {
 });
 
 // ==== 古いキャッシュ対策: アプリ復帰時にバージョンをチェックし、更新があれば案内 ====
-const APP_VERSION = "2026-09-12-2";
+const APP_VERSION = "2026-09-12-3";
 async function checkForUpdate() {
   try {
     const res = await fetch("./version.json?_=" + Date.now(), { cache: "no-store" });
