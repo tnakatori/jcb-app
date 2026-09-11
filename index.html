@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>JCB利用明細</title>
 <link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="icon" href="favicon.png" type="image/png" />
 <meta name="theme-color" content="#16233D" />
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -117,9 +119,51 @@
 
   .page { display: none; }
   .page.active { display: block; }
+
+  /* ---- 設定ページ ---- */
+  .settingsRow {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0; border-bottom: 1px solid #EDE7D8;
+  }
+  .settingsRow:last-child { border-bottom: none; }
+  .settingsRow .label { font-size: 14px; color: #16233D; }
+  .settingsRow .desc { font-size: 12px; color: #8A8172; margin-top: 2px; }
+  .switch { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; position: absolute; z-index: 1; }
+  .switch .track { position: absolute; inset: 0; background: #E7E0CC; border-radius: 999px; transition: background 0.15s; }
+  .switch input:checked + .track { background: #16233D; }
+  .switch .thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: #fff; border-radius: 999px; transition: left 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .switch input:checked ~ .thumb { left: 21px; }
+  .settingsInput {
+    width: 100px; text-align: right; border: 1px solid #E7E0CC; border-radius: 8px;
+    padding: 6px 8px; font-size: 14px; color: #16233D; background: #fff;
+  }
+  .logoutBtn {
+    width: 100%; margin-top: 8px; padding: 12px; border-radius: 12px; border: 1px solid #E7E0CC;
+    background: #fff; color: #B0533E; font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+
+  /* ---- Face IDロック画面 ---- */
+  #lockScreen {
+    position: fixed; inset: 0; background: #16233D; z-index: 50;
+    display: none; flex-direction: column; align-items: center; justify-content: center; color: #F4EFE3; padding: 24px; text-align: center;
+  }
+  #lockScreen h2 { font-size: 17px; font-weight: 600; margin: 16px 0 4px; }
+  #lockScreen p { font-size: 13px; color: #A9B2C4; margin-bottom: 24px; }
+  #lockScreen button {
+    background: #C9A227; color: #16233D; border: none; border-radius: 999px;
+    padding: 12px 28px; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
 </style>
 </head>
 <body>
+
+<div id="lockScreen">
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="1.6"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+  <h2>ロック中</h2>
+  <p>Face ID / Touch IDで解除してください</p>
+  <button id="unlockBtn">解除する</button>
+</div>
 
 <div id="loginScreen">
   <h1>JCB利用明細</h1>
@@ -192,6 +236,67 @@
     <p class="sectionLabel">支払い先別</p>
     <div class="card" id="merchantCard"></div>
   </div>
+
+  <div class="page" id="settingsPage">
+    <p class="sectionLabel">通知</p>
+    <div class="card">
+      <div class="settingsRow">
+        <div>
+          <div class="label">利用時にプッシュ通知</div>
+          <div class="desc">新しい支払いがあったらお知らせします</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="notifyToggle" />
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+      <div class="settingsRow">
+        <div>
+          <div class="label">通知する金額の下限</div>
+          <div class="desc">この金額以上の利用のみ通知</div>
+        </div>
+        <input type="number" inputmode="numeric" class="settingsInput" id="notifyThresholdInput" min="0" step="100" />
+      </div>
+    </div>
+
+    <p class="sectionLabel">セキュリティ</p>
+    <div class="card">
+      <div class="settingsRow">
+        <div>
+          <div class="label">Face ID / Touch IDロック</div>
+          <div class="desc">一定時間アプリを離れると生体認証を求めます</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="faceLockToggle" />
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+      <div class="settingsRow" id="faceLockHoursRow" style="display:none;">
+        <div class="label">ロックがかかるまでの時間</div>
+        <select class="settingsInput" id="faceLockHoursSelect" style="text-align:left;">
+          <option value="0">すぐに</option>
+          <option value="0.5">30分</option>
+          <option value="1">1時間</option>
+          <option value="3">3時間</option>
+          <option value="6">6時間</option>
+          <option value="12">12時間</option>
+          <option value="24">24時間</option>
+        </select>
+      </div>
+    </div>
+
+    <p class="sectionLabel">予算</p>
+    <div class="card">
+      <div class="settingsRow">
+        <div class="label">月の予算金額</div>
+        <input type="number" inputmode="numeric" class="settingsInput" id="budgetInput" min="0" step="1000" />
+      </div>
+    </div>
+
+    <div style="margin:20px 16px 0;">
+      <button class="logoutBtn" id="logoutBtn">ログアウト</button>
+    </div>
+  </div>
 </div>
 
 <div id="loadingScreen" class="loading" style="display:none;">読み込み中...</div>
@@ -205,6 +310,10 @@
     <button data-page="breakdownPage">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg>
       内訳
+    </button>
+    <button data-page="settingsPage">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+      設定
     </button>
   </div>
 </div>
@@ -265,6 +374,18 @@ document.getElementById("avatar").addEventListener("click", () => {
 });
 
 function showFatalError(msg) {
+  // iOSのホーム画面アプリで時々発生する既知のストレージ問題は、
+  // 怖いエラー文言ではなく「再ログインしてください」という案内に変える
+  if (msg.includes("missing initial state")) {
+    const loginEl = document.getElementById("loginError");
+    loginEl.textContent = "一時的にログイン情報が読み取れませんでした。もう一度ログインしてください。";
+    loginEl.style.display = "block";
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("app").style.display = "none";
+    document.getElementById("bottomNav").style.display = "none";
+    console.error(msg);
+    return;
+  }
   const loginEl = document.getElementById("loginError");
   loginEl.textContent = msg;
   loginEl.style.display = "block";
@@ -312,6 +433,145 @@ async function setupNotifications() {
   }
 }
 
+let appSettings = { notifyEnabled: true, notifyThreshold: 0, faceLockEnabled: false, faceLockHours: 1, budget: 40000 };
+
+function listenToSettings() {
+  onSnapshot(doc(db, "settings", "main"), (snap) => {
+    if (snap.exists()) {
+      appSettings = { ...appSettings, ...snap.data() };
+    }
+    document.getElementById("notifyToggle").checked = appSettings.notifyEnabled;
+    document.getElementById("notifyThresholdInput").value = appSettings.notifyThreshold;
+    document.getElementById("faceLockToggle").checked = appSettings.faceLockEnabled;
+    document.getElementById("faceLockHoursRow").style.display = appSettings.faceLockEnabled ? "flex" : "none";
+    document.getElementById("faceLockHoursSelect").value = String(appSettings.faceLockHours);
+    localStorage.setItem("faceLockHours", String(appSettings.faceLockHours));
+    document.getElementById("budgetInput").value = appSettings.budget;
+  });
+}
+
+async function saveSettings(patch) {
+  appSettings = { ...appSettings, ...patch };
+  try {
+    await setDoc(doc(db, "settings", "main"), appSettings, { merge: true });
+  } catch (e) {
+    showFatalError("設定の保存に失敗しました: " + e.message);
+  }
+}
+
+document.getElementById("notifyToggle").addEventListener("change", (e) => saveSettings({ notifyEnabled: e.target.checked }));
+document.getElementById("notifyThresholdInput").addEventListener("change", (e) => saveSettings({ notifyThreshold: Number(e.target.value) || 0 }));
+document.getElementById("budgetInput").addEventListener("change", (e) => saveSettings({ budget: Number(e.target.value) || 0 }));
+document.getElementById("faceLockHoursSelect").addEventListener("change", (e) => {
+  localStorage.setItem("faceLockHours", e.target.value);
+  saveSettings({ faceLockHours: Number(e.target.value) });
+});
+
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  if (confirm("ログアウトしますか？")) signOut(auth);
+});
+
+// ==== Face ID / Touch ID ロック(WebAuthn) ====
+document.getElementById("faceLockToggle").addEventListener("change", async (e) => {
+  document.getElementById("faceLockHoursRow").style.display = e.target.checked ? "flex" : "none";
+  if (e.target.checked) {
+    try {
+      const credId = await registerBiometric();
+      await saveSettings({ faceLockEnabled: true });
+      localStorage.setItem("faceCredId", credId);
+      localStorage.setItem("faceLockEnabled", "true");
+      localStorage.setItem("lastActiveAt", String(Date.now()));
+    } catch (err) {
+      e.target.checked = false;
+      document.getElementById("faceLockHoursRow").style.display = "none";
+      showFatalError("生体認証の登録に失敗しました: " + err.message);
+    }
+  } else {
+    await saveSettings({ faceLockEnabled: false });
+    localStorage.removeItem("faceLockEnabled");
+  }
+});
+
+async function registerBiometric() {
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  const userId = crypto.getRandomValues(new Uint8Array(16));
+  const cred = await navigator.credentials.create({
+    publicKey: {
+      challenge,
+      rp: { name: "JCB利用明細" },
+      user: { id: userId, name: "user", displayName: "ご本人" },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+      timeout: 60000,
+    }
+  });
+  const idB64 = btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
+  return idB64;
+}
+
+async function verifyBiometric() {
+  const credId = localStorage.getItem("faceCredId");
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+  const allowCredentials = credId
+    ? [{ id: Uint8Array.from(atob(credId), c => c.charCodeAt(0)), type: "public-key" }]
+    : [];
+  await navigator.credentials.get({
+    publicKey: { challenge, allowCredentials, userVerification: "required", timeout: 60000 }
+  });
+}
+
+function checkLockOnLaunch() {
+  if (localStorage.getItem("faceLockEnabled") !== "true") return;
+
+  const hours = parseFloat(localStorage.getItem("faceLockHours") || "1");
+  const lastActive = Number(localStorage.getItem("lastActiveAt") || 0);
+  const elapsedMs = Date.now() - lastActive;
+  if (lastActive > 0 && elapsedMs < hours * 3600 * 1000) {
+    return; // まだ設定時間が経っていないのでロックしない
+  }
+
+  const lockScreen = document.getElementById("lockScreen");
+  lockScreen.style.display = "flex";
+  const tryUnlock = () => {
+    verifyBiometric()
+      .then(() => {
+        lockScreen.style.display = "none";
+        localStorage.setItem("lastActiveAt", String(Date.now()));
+      })
+      .catch(() => { /* 失敗時はロック画面のまま。再度ボタンで試せる */ });
+  };
+  document.getElementById("unlockBtn").addEventListener("click", tryUnlock);
+  tryUnlock(); // 起動直後に自動で1回試す
+}
+
+// アプリがバックグラウンドに回ったタイミングを記録しておく(ロック要否の判定に使う)
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    localStorage.setItem("lastActiveAt", String(Date.now()));
+  }
+});
+window.addEventListener("pagehide", () => {
+  localStorage.setItem("lastActiveAt", String(Date.now()));
+});
+
+// ==== 古いキャッシュ対策: アプリ復帰時にバージョンをチェックし、更新があれば案内 ====
+const APP_VERSION = "2026-09-12-2";
+async function checkForUpdate() {
+  try {
+    const res = await fetch("./version.json?_=" + Date.now(), { cache: "no-store" });
+    const data = await res.json();
+    if (data.version && data.version !== APP_VERSION) {
+      if (confirm("新しいバージョンがあります。更新しますか？")) {
+        location.reload(true);
+      }
+    }
+  } catch (e) { /* オフライン時などは無視 */ }
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") checkForUpdate();
+});
+checkForUpdate();
+
 let allTx = [];
 let period = "week";
 let offset = 0;
@@ -327,7 +587,9 @@ onAuthStateChanged(auth, (user) => {
     avatar.innerHTML = user.photoURL ? `<img src="${user.photoURL}" alt="">` : (user.displayName||"?").slice(0,2);
     listenToTransactions();
     listenToOverrides();
+    listenToSettings();
     setupNotifications();
+    checkLockOnLaunch();
   } else {
     document.getElementById("loginScreen").style.display = "flex";
     document.getElementById("app").style.display = "none";
@@ -446,7 +708,8 @@ document.getElementById("bottomNav").addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-page]");
   if (!btn) return;
   page = btn.dataset.page;
-  document.getElementById("pageTitle").textContent = page === "homePage" ? "利用明細" : "内訳";
+  document.getElementById("pageTitle").textContent =
+    page === "homePage" ? "利用明細" : page === "breakdownPage" ? "内訳" : "設定";
   [...document.querySelectorAll(".bottomNav button")].forEach(b => b.classList.toggle("active", b===btn));
   [...document.querySelectorAll(".page")].forEach(p => p.classList.toggle("active", p.id===page));
 });
