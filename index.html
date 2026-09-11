@@ -17,7 +17,7 @@
     color: #16233D;
     min-height: 100vh;
   }
-  .wrap { max-width: 420px; margin: 0 auto; padding-bottom: 88px; }
+  .wrap { max-width: 420px; margin: 0 auto; padding-bottom: 104px; }
 
   #loginScreen {
     min-height: 100vh; display: flex; flex-direction: column;
@@ -112,7 +112,7 @@
   }
   .bottomNav button {
     flex: 1; border: none; background: none; display: flex; flex-direction: column;
-    align-items: center; gap: 2px; padding: 10px 0 12px; font-size: 11px; color: #B4AC9A; cursor: pointer;
+    align-items: center; gap: 4px; padding: 16px 0 20px; font-size: 11px; color: #B4AC9A; cursor: pointer;
   }
   .bottomNav button.active { color: #16233D; }
   .bottomNav svg { width: 18px; height: 18px; }
@@ -128,15 +128,19 @@
   .settingsRow:last-child { border-bottom: none; }
   .settingsRow .label { font-size: 14px; color: #16233D; }
   .settingsRow .desc { font-size: 12px; color: #8A8172; margin-top: 2px; }
-  .switch { position: relative; display: inline-block; width: 44px; height: 26px; flex-shrink: 0; }
-  .switch input {
-    position: absolute; top: 0; left: 0; opacity: 0; width: 100%; height: 100%; margin: 0;
-    cursor: pointer; z-index: 2; appearance: none; -webkit-appearance: none;
+  .toggle {
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    position: relative; width: 44px; height: 26px; border-radius: 999px;
+    background: #D8D0BA; flex-shrink: 0; margin: 0; cursor: pointer; outline: none;
+    transition: background 0.15s; vertical-align: middle;
   }
-  .switch .track { position: absolute; inset: 0; background: #E7E0CC; border-radius: 999px; transition: background 0.15s; }
-  .switch input:checked + .track { background: #16233D; }
-  .switch .thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: #fff; border-radius: 999px; transition: left 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-  .switch input:checked ~ .thumb { left: 21px; }
+  .toggle:checked { background: #16233D; }
+  .toggle::before {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+    border-radius: 999px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    transition: left 0.15s;
+  }
+  .toggle:checked::before { left: 21px; }
   .settingsInput {
     width: 100px; text-align: right; border: 1px solid #E7E0CC; border-radius: 8px;
     padding: 6px 8px; font-size: 14px; color: #16233D; background: #fff;
@@ -248,10 +252,7 @@
           <div class="label">利用時にプッシュ通知</div>
           <div class="desc">新しい支払いがあったらお知らせします</div>
         </div>
-        <label class="switch">
-          <input type="checkbox" id="notifyToggle" />
-          <span class="track"></span><span class="thumb"></span>
-        </label>
+        <input type="checkbox" class="toggle" id="notifyToggle" />
       </div>
       <div class="settingsRow">
         <div>
@@ -269,10 +270,7 @@
           <div class="label">Face ID / Touch IDロック</div>
           <div class="desc">一定時間アプリを離れると生体認証を求めます</div>
         </div>
-        <label class="switch">
-          <input type="checkbox" id="faceLockToggle" />
-          <span class="track"></span><span class="thumb"></span>
-        </label>
+        <input type="checkbox" class="toggle" id="faceLockToggle" />
       </div>
       <div class="settingsRow" id="faceLockHoursRow" style="display:none;">
         <div class="label">ロックがかかるまでの時間</div>
@@ -299,6 +297,8 @@
     <div style="margin:20px 16px 0;">
       <button class="logoutBtn" id="logoutBtn">ログアウト</button>
     </div>
+
+    <p style="text-align:center; font-size:11px; color:#B4AC9A; margin:16px 16px 0;">バージョン <span id="versionLabel"></span></p>
   </div>
 </div>
 
@@ -518,34 +518,38 @@ async function verifyBiometric() {
   });
 }
 
-function checkLockOnLaunch() {
-  if (localStorage.getItem("faceLockEnabled") !== "true") return;
-
+function shouldLockNow() {
+  if (localStorage.getItem("faceLockEnabled") !== "true") return false;
   const hours = parseFloat(localStorage.getItem("faceLockHours") || "1");
   const lastActive = Number(localStorage.getItem("lastActiveAt") || 0);
   const elapsedMs = Date.now() - lastActive;
-  if (lastActive > 0 && elapsedMs < hours * 3600 * 1000) {
-    return; // まだ設定時間が経っていないのでロックしない
-  }
+  return !(lastActive > 0 && elapsedMs < hours * 3600 * 1000);
+}
 
-  const lockScreen = document.getElementById("lockScreen");
-  lockScreen.style.display = "flex";
-  const tryUnlock = () => {
-    verifyBiometric()
-      .then(() => {
-        lockScreen.style.display = "none";
-        localStorage.setItem("lastActiveAt", String(Date.now()));
-      })
-      .catch(() => { /* 失敗時はロック画面のまま。再度ボタンで試せる */ });
-  };
-  document.getElementById("unlockBtn").addEventListener("click", tryUnlock);
+function tryUnlock() {
+  verifyBiometric()
+    .then(() => {
+      document.getElementById("lockScreen").style.display = "none";
+      localStorage.setItem("lastActiveAt", String(Date.now()));
+    })
+    .catch(() => { /* 失敗時はロック画面のまま。再度ボタンで試せる */ });
+}
+document.getElementById("unlockBtn").addEventListener("click", tryUnlock);
+
+function checkLockOnLaunch() {
+  if (!shouldLockNow()) return;
+  document.getElementById("lockScreen").style.display = "flex";
   tryUnlock(); // 起動直後に自動で1回試す
 }
 
-// アプリがバックグラウンドに回ったタイミングを記録しておく(ロック要否の判定に使う)
+// アプリがバックグラウンドに回ったタイミングを記録し、フォアグラウンドに戻るたびにロック要否を再判定する
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     localStorage.setItem("lastActiveAt", String(Date.now()));
+  } else if (document.visibilityState === "visible") {
+    if (document.getElementById("app").style.display !== "none") {
+      checkLockOnLaunch();
+    }
   }
 });
 window.addEventListener("pagehide", () => {
@@ -553,7 +557,8 @@ window.addEventListener("pagehide", () => {
 });
 
 // ==== 古いキャッシュ対策: アプリ復帰時にバージョンをチェックし、更新があれば案内 ====
-const APP_VERSION = "2026-09-12-3";
+const APP_VERSION = "2026-09-12-5";
+document.getElementById("versionLabel").textContent = APP_VERSION;
 async function checkForUpdate() {
   try {
     const res = await fetch("./version.json?_=" + Date.now(), { cache: "no-store" });
@@ -710,6 +715,10 @@ document.getElementById("bottomNav").addEventListener("click", (e) => {
     page === "homePage" ? "利用明細" : page === "breakdownPage" ? "内訳" : "設定";
   [...document.querySelectorAll(".bottomNav button")].forEach(b => b.classList.toggle("active", b===btn));
   [...document.querySelectorAll(".page")].forEach(p => p.classList.toggle("active", p.id===page));
+
+  const showPeriodUi = page !== "settingsPage";
+  document.getElementById("tabs").style.display = showPeriodUi ? "flex" : "none";
+  document.querySelector(".dateNav").style.display = showPeriodUi ? "flex" : "none";
 });
 
 document.getElementById("prevBtn").addEventListener("click", () => { offset++; render(); });
