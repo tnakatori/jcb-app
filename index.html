@@ -35,7 +35,12 @@
   }
   #loginError { color: #B0533E; font-size: 13px; margin-top: 16px; display: none; white-space: pre-wrap; }
  
-  .header { padding: 24px 16px 0; display: flex; justify-content: space-between; align-items: center; }
+  .header {
+    position: sticky; top: 0; z-index: 20;
+    padding: 16px 16px 10px; display: flex; justify-content: space-between; align-items: center;
+    background: rgba(244,239,227,0.88);
+    -webkit-backdrop-filter: saturate(180%) blur(16px); backdrop-filter: saturate(180%) blur(16px);
+  }
   .header .eyebrow { font-size: 12px; letter-spacing: 0.02em; color: #8A8172; }
   .header h2 { font-size: 19px; font-weight: 600; margin: 2px 0 0; }
   .avatar {
@@ -119,18 +124,22 @@
     z-index: 10;
   }
   .bottomNav .inner {
-    width: 100%; max-width: 420px; background: #FBF9F3; opacity: 1;
-    border-top: 1px solid #E7E0CC; display: flex;
-    box-shadow: 0 -4px 16px rgba(22,35,61,0.08);
+    width: 100%; max-width: 420px;
+    background: rgba(251,249,243,0.82);
+    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+    border-top: 0.5px solid rgba(22,35,61,0.18); display: flex;
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .bottomNav button {
     flex: 1; border: none; background: none; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 6px; padding: 14px 0;
-    min-height: 68px; font-size: 13px; font-weight: 500; color: #B4AC9A; cursor: pointer;
+    align-items: center; justify-content: center; gap: 3px; padding: 8px 0 6px;
+    min-height: 54px; font-size: 10px; font-weight: 500; letter-spacing: 0.01em;
+    color: #9A927F; cursor: pointer; transition: opacity .12s, transform .12s;
   }
+  .bottomNav button:active { opacity: 0.5; transform: scale(0.94); }
   .bottomNav button.active { color: #16233D; }
-  .bottomNav svg { width: 24px; height: 24px; }
+  .bottomNav button.active svg { fill: rgba(22,35,61,0.12); }
+  .bottomNav svg { width: 25px; height: 25px; }
  
   .page { display: none; }
   .page.active { display: block; }
@@ -590,6 +599,13 @@ function listenToSettings() {
     document.getElementById("faceLockHoursSelect").value = String(appSettings.faceLockHours);
     localStorage.setItem("faceLockHours", String(appSettings.faceLockHours));
     document.getElementById("budgetInput").value = appSettings.budget;
+    // 端末側のフラグをFirestoreの設定に同期(アプリ再追加でlocalStorageが消えても復元される)
+    const wasLocal = localStorage.getItem("faceLockEnabled") === "true";
+    if (appSettings.faceLockEnabled) localStorage.setItem("faceLockEnabled", "true");
+    else localStorage.removeItem("faceLockEnabled");
+    if (appSettings.faceLockEnabled && !wasLocal && document.getElementById("lockScreen").style.display !== "flex") {
+      checkLockOnLaunch();
+    }
   });
 }
  
@@ -665,6 +681,8 @@ async function verifyBiometric() {
  
 function shouldLockNow() {
   if (localStorage.getItem("faceLockEnabled") !== "true") return false;
+  // 有効なのにこの端末に認証情報がない(アプリ再追加などで消えた)場合は、再設定するまでロックしておく
+  if (!localStorage.getItem("faceCredId")) return true;
   const hours = parseFloat(localStorage.getItem("faceLockHours") || "1");
   const lastActive = Number(localStorage.getItem("lastActiveAt") || 0);
   const elapsedMs = Date.now() - lastActive;
@@ -672,6 +690,17 @@ function shouldLockNow() {
 }
  
 function tryUnlock() {
+  if (!localStorage.getItem("faceCredId")) {
+    // この端末で未登録 → 登録し直す(ボタンのタップ操作から呼ばれる必要あり)
+    registerBiometric()
+      .then((credId) => {
+        localStorage.setItem("faceCredId", credId);
+        document.getElementById("lockScreen").style.display = "none";
+        localStorage.setItem("lastActiveAt", String(Date.now()));
+      })
+      .catch(() => { /* 失敗時はロック画面のまま */ });
+    return;
+  }
   verifyBiometric()
     .then(() => {
       document.getElementById("lockScreen").style.display = "none";
@@ -683,8 +712,10 @@ document.getElementById("unlockBtn").addEventListener("click", tryUnlock);
  
 function checkLockOnLaunch() {
   if (!shouldLockNow()) return;
+  const needsRebind = !localStorage.getItem("faceCredId");
+  document.getElementById("unlockBtn").textContent = needsRebind ? "Face IDを再設定する" : "解除する";
   document.getElementById("lockScreen").style.display = "flex";
-  tryUnlock(); // 起動直後に自動で1回試す
+  if (!needsRebind) tryUnlock(); // 起動直後に自動で1回試す
 }
  
 // アプリがバックグラウンドに回ったタイミングを記録し、フォアグラウンドに戻るたびにロック要否を再判定する
@@ -704,11 +735,11 @@ window.addEventListener("pagehide", () => {
 // ==== バージョン表記 ====
 // DISPLAY_VERSION: これまでの主な更新(通知/Face ID/ロック動作修正/UI調整/キャッシュ対策/
 // 複数カード対応など)を数えた、ユーザー向けの分かりやすいバージョン表記。更新のたびに増やす。
-const DISPLAY_VERSION = "v1.10";
+const DISPLAY_VERSION = "v1.11";
 document.getElementById("versionLabel").textContent = DISPLAY_VERSION;
  
 // ==== 古いキャッシュ対策: アプリ復帰時にバージョンをチェックし、更新があれば案内 ====
-const APP_VERSION = "2026-11-01-3";
+const APP_VERSION = "2026-11-01-4";
 document.getElementById("buildLabel").textContent = "build " + APP_VERSION;
 async function checkForUpdate() {
   try {
