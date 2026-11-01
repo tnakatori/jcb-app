@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>JCB利用明細</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -10,15 +10,19 @@
 <meta name="theme-color" content="#16233D" />
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    touch-action: manipulation;
+  }
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
     background: #F4EFE3;
     color: #16233D;
     min-height: 100vh;
+    overscroll-behavior: none;
   }
   .wrap { max-width: 420px; margin: 0 auto; padding-bottom: 104px; }
-
+ 
   #loginScreen {
     min-height: 100vh; display: flex; flex-direction: column;
     align-items: center; justify-content: center; padding: 24px; text-align: center;
@@ -30,7 +34,7 @@
     padding: 12px 28px; font-size: 15px; font-weight: 600; cursor: pointer;
   }
   #loginError { color: #B0533E; font-size: 13px; margin-top: 16px; display: none; white-space: pre-wrap; }
-
+ 
   .header { padding: 24px 16px 0; display: flex; justify-content: space-between; align-items: center; }
   .header .eyebrow { font-size: 12px; letter-spacing: 0.02em; color: #8A8172; }
   .header h2 { font-size: 19px; font-weight: 600; margin: 2px 0 0; }
@@ -40,14 +44,14 @@
     font-size: 13px; font-weight: 600; cursor: pointer; overflow: hidden;
   }
   .avatar img { width: 100%; height: 100%; object-fit: cover; }
-
+ 
   .tabs { margin: 20px 16px 0; display: flex; gap: 4px; background: #EDE7D8; border-radius: 999px; padding: 4px; }
   .tabs button {
     flex: 1; padding: 8px 0; border-radius: 999px; border: none; background: none;
     font-size: 14px; font-weight: 500; color: #6B6255; cursor: pointer;
   }
   .tabs button.active { background: #16233D; color: #F4EFE3; }
-
+ 
   .dateNav { margin: 16px 16px 0; display: flex; align-items: center; justify-content: space-between; }
   .dateNav .arrowBtn {
     width: 32px; height: 32px; border-radius: 999px; border: none; background: none;
@@ -64,15 +68,24 @@
   .dateLabelWrap input[type="date"], .dateLabelWrap select {
     position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;
   }
-
+ 
   .totalCard {
     margin: 16px 16px 0; background: #FBF9F3; border: 1px solid #E7E0CC;
     border-radius: 24px; padding: 20px 20px 16px;
   }
   .totalCard .sub { font-size: 13px; color: #8A8172; }
   .totalAmount { font-size: 32px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .milesLine { font-size: 12px; color: #B5942A; margin-top: 6px; font-weight: 500; }
   canvas#periodChart { width: 100% !important; height: 100% !important; }
-
+ 
+  .paymentCard {
+    margin: 16px 16px 0; background: #16233D; color: #F4EFE3;
+    border-radius: 20px; padding: 16px 20px;
+  }
+  .paymentCard .sub { font-size: 12px; color: #A9B2C4; }
+  .paymentCard .amt { font-size: 22px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .paymentCard .meta { font-size: 11px; color: #A9B2C4; margin-top: 6px; }
+ 
   .sectionLabel { font-size: 13px; color: #8A8172; margin: 20px 16px 8px; }
   .card { margin: 0 16px; background: #FBF9F3; border: 1px solid #E7E0CC; border-radius: 16px; padding: 16px; }
   .row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
@@ -84,11 +97,11 @@
   .rowTop .amt { font-weight: 500; font-variant-numeric: tabular-nums; flex-shrink: 0; }
   .track { height: 6px; border-radius: 999px; background: #EDE7D8; overflow: hidden; }
   .fill { height: 100%; border-radius: 999px; }
-
+ 
   .catSelectWrap { margin-left: 44px; margin-top: 6px; display: flex; align-items: center; gap: 6px; }
   .catSelectWrap span { font-size: 11px; color: #8A8172; }
   .catSelectWrap select { font-size: 12px; border: 1px solid #E7E0CC; border-radius: 999px; padding: 3px 8px; background: #fff; color: #16233D; }
-
+ 
   .txCard { margin: 0 16px; background: #FBF9F3; border: 1px solid #E7E0CC; border-radius: 16px; overflow: hidden; }
   .txRow { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #EDE7D8; }
   .txRow:last-child { border-bottom: none; }
@@ -97,10 +110,10 @@
   .txMerchant { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .txDate { font-size: 12px; color: #8A8172; }
   .txAmount { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
-
+ 
   .empty { text-align: center; padding: 32px 20px; color: #8A8172; font-size: 14px; }
   .loading { text-align: center; padding: 60px 20px; color: #8A8172; font-size: 14px; }
-
+ 
   .bottomNav {
     position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: center;
     z-index: 10;
@@ -109,17 +122,19 @@
     width: 100%; max-width: 420px; background: #FBF9F3; opacity: 1;
     border-top: 1px solid #E7E0CC; display: flex;
     box-shadow: 0 -4px 16px rgba(22,35,61,0.08);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .bottomNav button {
     flex: 1; border: none; background: none; display: flex; flex-direction: column;
-    align-items: center; gap: 4px; padding: 16px 0 20px; font-size: 11px; color: #B4AC9A; cursor: pointer;
+    align-items: center; justify-content: center; gap: 6px; padding: 14px 0;
+    min-height: 68px; font-size: 13px; font-weight: 500; color: #B4AC9A; cursor: pointer;
   }
   .bottomNav button.active { color: #16233D; }
-  .bottomNav svg { width: 18px; height: 18px; }
-
+  .bottomNav svg { width: 24px; height: 24px; }
+ 
   .page { display: none; }
   .page.active { display: block; }
-
+ 
   /* ---- 設定ページ ---- */
   .settingsRow {
     display: flex; align-items: center; justify-content: space-between;
@@ -149,7 +164,7 @@
     width: 100%; margin-top: 8px; padding: 12px; border-radius: 12px; border: 1px solid #E7E0CC;
     background: #fff; color: #B0533E; font-size: 14px; font-weight: 500; cursor: pointer;
   }
-
+ 
   /* ---- Face IDロック画面 ---- */
   #lockScreen {
     position: fixed; inset: 0; background: #16233D; z-index: 50;
@@ -161,46 +176,127 @@
     background: #C9A227; color: #16233D; border: none; border-radius: 999px;
     padding: 12px 28px; font-size: 15px; font-weight: 600; cursor: pointer;
   }
+ 
+  /* ---- 起動スプラッシュ画面(JCB→ANAのフライトトレイル) ---- */
+  #splashScreen {
+    position: fixed; inset: 0; background: #F4EFE3; z-index: 60;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  #splashScreen .splashStage { position: relative; width: 260px; height: 170px; }
+  #splashScreen .jcbLabel {
+    position: absolute; left: 0; bottom: 0; display: flex; flex-direction: column;
+    animation: splashFadeIn .6s ease-out .1s both;
+  }
+  #splashScreen .jcbLabel .word { font-size: 26px; font-weight: 800; color: #00308F; letter-spacing: 0.03em; }
+  #splashScreen .jcbLabel .sub { font-size: 9px; color: #8A8172; letter-spacing: 0.12em; margin-top: 2px; }
+  #splashScreen .anaLabel {
+    position: absolute; right: 0; top: 0; display: flex; flex-direction: column; align-items: flex-end;
+    animation: splashFadeIn .6s ease-out 1.9s both, splashGlow 2.2s ease-in-out 2.6s infinite;
+  }
+  #splashScreen .anaLabel .word { font-size: 20px; font-weight: 800; color: #005BAC; letter-spacing: 0.05em; }
+  #splashScreen .anaLabel .sub { font-size: 9px; color: #005BAC; letter-spacing: 0.16em; margin-top: 2px; }
+  #splashScreen .brandLockup {
+    position: absolute; left: 0; right: 0; top: -34px; text-align: center;
+    font-size: 11px; letter-spacing: 0.28em; color: #8A8172; animation: splashFadeIn 1s ease-out .2s both;
+  }
+  #splashScreen .dots { display: flex; gap: 8px; margin-top: 28px; }
+  #splashScreen .dots span {
+    width: 6px; height: 6px; border-radius: 999px; background: #00308F;
+    animation: splashPulseDot 1.2s ease-in-out infinite;
+  }
+  #splashScreen .dots span:nth-child(2) { animation-delay: .2s; }
+  #splashScreen .dots span:nth-child(3) { animation-delay: .4s; }
+  #splashScreen .caption { font-size: 11px; color: #8A8172; margin-top: 10px; letter-spacing: 0.06em; }
+  #trailPath { animation: splashDrawTrail 2.6s ease-out forwards; }
+  #trailPlane { offset-path: path('M 20 140 C 70 110, 130 90, 230 40'); animation: splashFlyPlane 2.6s ease-out forwards; }
+  @keyframes splashDrawTrail { from { stroke-dashoffset: 340; } to { stroke-dashoffset: 0; } }
+  @keyframes splashFlyPlane { 0% { offset-distance: 0%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
+  @keyframes splashFadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+  @keyframes splashGlow { 0%, 100% { text-shadow: 0 0 0 rgba(0,91,172,0); } 50% { text-shadow: 0 0 14px rgba(0,91,172,0.45); } }
+  @keyframes splashPulseDot { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+ 
+  /* ---- カード切替 ---- */
+  .cardSwitch {
+    margin: 16px 16px 0; display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px;
+  }
+  .cardSwitch::-webkit-scrollbar { display: none; }
+  .cardChip {
+    flex-shrink: 0; padding: 7px 16px; border-radius: 999px; border: 1px solid #E7E0CC;
+    background: #fff; font-size: 12px; color: #6B6255; white-space: nowrap; cursor: pointer;
+  }
+  .cardChip.active { background: #16233D; color: #F4EFE3; border-color: #16233D; }
 </style>
 </head>
 <body>
-
+ 
+<div id="splashScreen">
+  <div class="splashStage">
+    <div class="brandLockup">JCB &nbsp;×&nbsp; ANA</div>
+    <svg width="260" height="170" style="position:absolute; inset:0;">
+      <defs>
+        <linearGradient id="splashTrailGrad" x1="20" y1="140" x2="230" y2="40" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#00308F"/>
+          <stop offset="100%" stop-color="#005BAC"/>
+        </linearGradient>
+      </defs>
+      <path id="trailPath" d="M 20 140 C 70 110, 130 90, 230 40" fill="none" stroke="url(#splashTrailGrad)" stroke-width="2" stroke-linecap="round" stroke-dasharray="6 8" stroke-dashoffset="340" opacity="0.85"/>
+      <g id="trailPlane">
+        <g transform="rotate(-35) translate(-8,-8)">
+          <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 00-3 0V9l-8 5v2l8-2.5V19l-2.5 1.8V22l3.5-1 3.5 1v-1.2L13 19v-5.5z" fill="#005BAC" transform="scale(0.8)"/>
+        </g>
+      </g>
+    </svg>
+    <div class="jcbLabel">
+      <div class="word">JCB</div>
+      <div class="sub">利用明細</div>
+    </div>
+    <div class="anaLabel">
+      <div class="word">ANA</div>
+      <div class="sub">MILES</div>
+    </div>
+  </div>
+  <div class="dots"><span></span><span></span><span></span></div>
+  <div class="caption">利用明細を読み込み中...</div>
+</div>
+ 
 <div id="lockScreen">
   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="1.6"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
   <h2>ロック中</h2>
   <p>Face ID / Touch IDで解除してください</p>
   <button id="unlockBtn">解除する</button>
 </div>
-
-<div id="loginScreen">
+ 
+<div id="loginScreen" style="display:none;">
   <h1>JCB利用明細</h1>
   <p>ご本人のGoogleアカウントでログインしてください</p>
   <button id="loginBtn">Googleでログイン</button>
   <p id="loginError"></p>
 </div>
-
+ 
 <div id="app" class="wrap" style="display:none;">
   <div class="header">
     <div>
-      <p class="eyebrow">ANA JCB CARD FIRST</p>
+      <p class="eyebrow" id="cardEyebrow">全カード</p>
       <h2 id="pageTitle">利用明細</h2>
     </div>
     <div class="avatar" id="avatar"></div>
   </div>
-
+ 
   <p id="appError" style="display:none; margin:8px 16px 0; color:#B0533E; font-size:12px; white-space:pre-wrap;"></p>
-
+ 
+  <div class="cardSwitch" id="cardSwitch" style="display:none;"></div>
+ 
   <div id="notifyBar" style="display:none; margin:10px 16px 0; padding:10px 14px; background:#FBF9F3; border:1px solid #E7E0CC; border-radius:14px; align-items:center; justify-content:space-between; gap:8px;">
     <span style="font-size:12px; color:#6B6255;">利用があったら通知でお知らせします</span>
     <button id="notifyBtn" style="background:#16233D; color:#F4EFE3; border:none; border-radius:999px; padding:6px 12px; font-size:12px; cursor:pointer; flex-shrink:0;">通知を許可</button>
   </div>
-
+ 
   <div class="tabs" id="tabs">
     <button data-period="day">日</button>
     <button data-period="week" class="active">週</button>
     <button data-period="month">月</button>
   </div>
-
+ 
   <div class="dateNav">
     <button class="arrowBtn" id="prevBtn" aria-label="前へ">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
@@ -217,33 +313,40 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     </button>
   </div>
-
+ 
   <div class="page active" id="homePage">
     <div class="totalCard">
       <p class="sub">合計金額</p>
       <p class="totalAmount" id="totalAmount">¥0</p>
+      <p class="milesLine" id="milesLine">獲得マイル(目安): 0マイル</p>
       <div style="position:relative; height:110px; margin-top:12px;">
         <canvas id="periodChart"></canvas>
       </div>
     </div>
-
+ 
+    <div class="paymentCard" id="paymentCard">
+      <p class="sub">次回のお支払い予定</p>
+      <p class="amt" id="paymentAmount">¥0</p>
+      <p class="meta" id="paymentMeta"></p>
+    </div>
+ 
     <p class="sectionLabel" id="historyLabel">利用履歴</p>
     <div class="txCard" id="txCard"></div>
   </div>
-
+ 
   <div class="page" id="breakdownPage">
     <div id="recurringSection" style="display:none;">
       <p class="sectionLabel">定期支払い(推定)</p>
       <div class="card" id="recurringCard"></div>
     </div>
-
+ 
     <p class="sectionLabel">カテゴリ別</p>
     <div class="card" id="catCard"></div>
-
+ 
     <p class="sectionLabel">支払い先別</p>
     <div class="card" id="merchantCard"></div>
   </div>
-
+ 
   <div class="page" id="settingsPage">
     <p class="sectionLabel">通知</p>
     <div class="card">
@@ -262,7 +365,7 @@
         <input type="number" inputmode="numeric" class="settingsInput" id="notifyThresholdInput" min="0" step="100" />
       </div>
     </div>
-
+ 
     <p class="sectionLabel">セキュリティ</p>
     <div class="card">
       <div class="settingsRow">
@@ -285,7 +388,7 @@
         </select>
       </div>
     </div>
-
+ 
     <p class="sectionLabel">予算</p>
     <div class="card">
       <div class="settingsRow">
@@ -293,17 +396,18 @@
         <input type="number" inputmode="numeric" class="settingsInput" id="budgetInput" min="0" step="1000" />
       </div>
     </div>
-
+ 
     <div style="margin:20px 16px 0;">
       <button class="logoutBtn" id="logoutBtn">ログアウト</button>
     </div>
-
+ 
     <p style="text-align:center; font-size:11px; color:#B4AC9A; margin:16px 16px 0;">バージョン <span id="versionLabel"></span></p>
+    <p style="text-align:center; font-size:9px; color:#D8D0BA; margin:2px 16px 0;" id="buildLabel"></p>
   </div>
 </div>
-
+ 
 <div id="loadingScreen" class="loading" style="display:none;">読み込み中...</div>
-
+ 
 <div class="bottomNav" id="bottomNav" style="display:none;">
   <div class="inner">
     <button class="active" data-page="homePage">
@@ -320,7 +424,7 @@
     </button>
   </div>
 </div>
-
+ 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -333,7 +437,7 @@ import {
 import {
   getMessaging, getToken, onMessage, isSupported
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
-
+ 
 const firebaseConfig = {
   apiKey: "AIzaSyAO4QfWy5rEy_O860RoLbhYJ-scmKfIhOA",
   authDomain: "jcb-card-8f92f.firebaseapp.com",
@@ -342,7 +446,7 @@ const firebaseConfig = {
   messagingSenderId: "894726627206",
   appId: "1:894726627206:web:28507b3e3b38c24b675607",
 };
-
+ 
 const CATEGORY_RULES = [
   { key: "cafe",    label: "カフェ",   icon: "☕", color: "#B5651D", words: ["スターバックス","ドトール","タリーズ","コーヒー","カフェ","メルモ"] },
   { key: "food",    label: "食料品",   icon: "🛒", color: "#C9A227", words: ["セブン","ローソン","ファミリーマート","イオン","スーパー","西友","マルエツ"] },
@@ -353,9 +457,9 @@ const CATEGORY_RULES = [
 ];
 const OTHER = { key: "other", label: "その他", icon: "🧾", color: "#8A8172", words: [] };
 const ALL_CATS = [...CATEGORY_RULES, OTHER];
-
+ 
 let categoryOverrides = {};
-
+ 
 function categorize(merchant) {
   if (categoryOverrides[merchant]) {
     return ALL_CATS.find(c => c.key === categoryOverrides[merchant]) || OTHER;
@@ -363,24 +467,56 @@ function categorize(merchant) {
   return CATEGORY_RULES.find(r => r.words.some(w => merchant.includes(w))) || OTHER;
 }
 function yen(n) { return "¥" + Math.round(n).toLocaleString("ja-JP"); }
-
+ 
+// 200円=2マイル(=100円で1マイル)の還元率をもとにした目安計算
+const MILES_PER_YEN = 2 / 200;
+function estimateMiles(amountYen) { return Math.floor(amountYen * MILES_PER_YEN); }
+ 
+// JCB「15日締め・翌月10日払い」に基づく、次回のお支払い予定を計算する
+function getNextBillingCycle() {
+  const now = startOfDay(new Date());
+  let dueDate = new Date(now.getFullYear(), now.getMonth(), 10);
+  while (dueDate < now) {
+    dueDate = new Date(dueDate.getFullYear(), dueDate.getMonth() + 1, 10);
+  }
+  const closeDate = new Date(dueDate.getFullYear(), dueDate.getMonth() - 1, 15);
+  const cycleStart = new Date(closeDate.getFullYear(), closeDate.getMonth() - 1, 16);
+  const cycleEndExclusive = addDays(closeDate, 1);
+  const tx = txPool().filter(t => t.date >= cycleStart && t.date < cycleEndExclusive);
+  const total = tx.reduce((s, t) => s + t.amount, 0);
+  return { dueDate, closeDate, cycleStart, total };
+}
+ 
+function renderPayment() {
+  const card = getNextBillingCycle();
+  document.getElementById("paymentAmount").textContent = yen(card.total);
+  const fmt = (d) => `${d.getMonth() + 1}/${d.getDate()}`;
+  document.getElementById("paymentMeta").textContent =
+    `対象期間: ${fmt(card.cycleStart)}〜${fmt(card.closeDate)}　支払日: ${card.dueDate.getFullYear()}年${card.dueDate.getMonth() + 1}月${card.dueDate.getDate()}日`;
+}
+ 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 setPersistence(auth, indexedDBLocalPersistence).catch((e) => console.warn("persistence設定エラー: " + e.message));
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
-
+ 
 document.getElementById("loginBtn").addEventListener("click", () => {
   signInWithPopup(auth, provider).catch((err) => showFatalError("ログインエラー: " + err.code + " " + err.message));
 });
 document.getElementById("avatar").addEventListener("click", () => {
   if (confirm("ログアウトしますか？")) signOut(auth);
 });
-
+ 
 function showFatalError(msg) {
   // iOSのホーム画面アプリで時々発生する既知の一時的エラー。
   // 実際のログイン状態には影響しないため、ログイン画面には戻さず黙って無視する。
   if (msg.includes("missing initial state")) {
+    console.warn(msg);
+    return;
+  }
+  // ポップアップを連続で開いた時などに出る軽微なエラー。実害はないので無視する。
+  if (msg.includes("cancelled-popup-request")) {
     console.warn(msg);
     return;
   }
@@ -392,16 +528,25 @@ function showFatalError(msg) {
   appEl.style.display = "block";
   console.error(msg);
 }
+// ダブルタップでの拡大を禁止(iOS Safariのフォールバック)
+let lastTouchEnd = 0;
+document.addEventListener("touchend", (e) => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 350) e.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
+document.addEventListener("gesturestart", (e) => e.preventDefault());
+ 
 window.addEventListener("error", (e) => showFatalError("スクリプトエラー: " + e.message));
 window.addEventListener("unhandledrejection", (e) => showFatalError("非同期エラー: " + (e.reason && e.reason.message || e.reason)));
-
+ 
 const VAPID_KEY = "BJz0B44WR-V8jFtoUv8SCc1mIVhdoPup5iYmqNvfUMvFNGSM8t5iV6ZQsCUuwWADu0E0e2LKuuFzMg5SrABVHVw";
-
+ 
 async function setupNotifications() {
   try {
     if (!(await isSupported())) return; // 対応していない環境(例: ホーム画面未追加のiPhone)では何もしない
     if (Notification.permission === "granted") return; // すでに許可済みなら案内不要
-
+ 
     const bar = document.getElementById("notifyBar");
     bar.style.display = "flex";
     document.getElementById("notifyBtn").addEventListener("click", async () => {
@@ -409,7 +554,7 @@ async function setupNotifications() {
         const reg = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
         const permission = await Notification.requestPermission();
         if (permission !== "granted") { bar.style.display = "none"; return; }
-
+ 
         const messaging = getMessaging(app);
         const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
         if (token) {
@@ -420,7 +565,7 @@ async function setupNotifications() {
         showFatalError("通知の設定に失敗しました: " + e.message);
       }
     });
-
+ 
     // アプリを開いている間に通知が来た場合の表示
     const messaging = getMessaging(app);
     onMessage(messaging, (payload) => {
@@ -430,9 +575,9 @@ async function setupNotifications() {
     // 通知非対応環境などは静かに無視
   }
 }
-
+ 
 let appSettings = { notifyEnabled: true, notifyThreshold: 0, faceLockEnabled: false, faceLockHours: 1, budget: 40000 };
-
+ 
 function listenToSettings() {
   onSnapshot(doc(db, "settings", "main"), (snap) => {
     if (snap.exists()) {
@@ -447,7 +592,7 @@ function listenToSettings() {
     document.getElementById("budgetInput").value = appSettings.budget;
   });
 }
-
+ 
 async function saveSettings(patch) {
   appSettings = { ...appSettings, ...patch };
   try {
@@ -456,7 +601,7 @@ async function saveSettings(patch) {
     showFatalError("設定の保存に失敗しました: " + e.message);
   }
 }
-
+ 
 document.getElementById("notifyToggle").addEventListener("change", (e) => saveSettings({ notifyEnabled: e.target.checked }));
 document.getElementById("notifyThresholdInput").addEventListener("change", (e) => saveSettings({ notifyThreshold: Number(e.target.value) || 0 }));
 document.getElementById("budgetInput").addEventListener("change", (e) => saveSettings({ budget: Number(e.target.value) || 0 }));
@@ -464,11 +609,11 @@ document.getElementById("faceLockHoursSelect").addEventListener("change", (e) =>
   localStorage.setItem("faceLockHours", e.target.value);
   saveSettings({ faceLockHours: Number(e.target.value) });
 });
-
+ 
 document.getElementById("logoutBtn").addEventListener("click", () => {
   if (confirm("ログアウトしますか？")) signOut(auth);
 });
-
+ 
 // ==== Face ID / Touch ID ロック(WebAuthn) ====
 document.getElementById("faceLockToggle").addEventListener("change", async (e) => {
   document.getElementById("faceLockHoursRow").style.display = e.target.checked ? "flex" : "none";
@@ -489,7 +634,7 @@ document.getElementById("faceLockToggle").addEventListener("change", async (e) =
     localStorage.removeItem("faceLockEnabled");
   }
 });
-
+ 
 async function registerBiometric() {
   const challenge = crypto.getRandomValues(new Uint8Array(32));
   const userId = crypto.getRandomValues(new Uint8Array(16));
@@ -506,7 +651,7 @@ async function registerBiometric() {
   const idB64 = btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
   return idB64;
 }
-
+ 
 async function verifyBiometric() {
   const credId = localStorage.getItem("faceCredId");
   const challenge = crypto.getRandomValues(new Uint8Array(32));
@@ -517,7 +662,7 @@ async function verifyBiometric() {
     publicKey: { challenge, allowCredentials, userVerification: "required", timeout: 60000 }
   });
 }
-
+ 
 function shouldLockNow() {
   if (localStorage.getItem("faceLockEnabled") !== "true") return false;
   const hours = parseFloat(localStorage.getItem("faceLockHours") || "1");
@@ -525,7 +670,7 @@ function shouldLockNow() {
   const elapsedMs = Date.now() - lastActive;
   return !(lastActive > 0 && elapsedMs < hours * 3600 * 1000);
 }
-
+ 
 function tryUnlock() {
   verifyBiometric()
     .then(() => {
@@ -535,13 +680,13 @@ function tryUnlock() {
     .catch(() => { /* 失敗時はロック画面のまま。再度ボタンで試せる */ });
 }
 document.getElementById("unlockBtn").addEventListener("click", tryUnlock);
-
+ 
 function checkLockOnLaunch() {
   if (!shouldLockNow()) return;
   document.getElementById("lockScreen").style.display = "flex";
   tryUnlock(); // 起動直後に自動で1回試す
 }
-
+ 
 // アプリがバックグラウンドに回ったタイミングを記録し、フォアグラウンドに戻るたびにロック要否を再判定する
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
@@ -555,10 +700,16 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("pagehide", () => {
   localStorage.setItem("lastActiveAt", String(Date.now()));
 });
-
+ 
+// ==== バージョン表記 ====
+// DISPLAY_VERSION: これまでの主な更新(通知/Face ID/ロック動作修正/UI調整/キャッシュ対策/
+// 複数カード対応など)を数えた、ユーザー向けの分かりやすいバージョン表記。更新のたびに増やす。
+const DISPLAY_VERSION = "v1.10";
+document.getElementById("versionLabel").textContent = DISPLAY_VERSION;
+ 
 // ==== 古いキャッシュ対策: アプリ復帰時にバージョンをチェックし、更新があれば案内 ====
-const APP_VERSION = "2026-09-12-5";
-document.getElementById("versionLabel").textContent = APP_VERSION;
+const APP_VERSION = "2026-11-01-3";
+document.getElementById("buildLabel").textContent = "build " + APP_VERSION;
 async function checkForUpdate() {
   try {
     const res = await fetch("./version.json?_=" + Date.now(), { cache: "no-store" });
@@ -574,14 +725,46 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") checkForUpdate();
 });
 checkForUpdate();
-
+ 
 let allTx = [];
 let period = "week";
 let offset = 0;
 let chart = null;
 let page = "homePage";
-
+let selectedCard = "all";
+ 
+// 選択中のカードで絞り込んだ取引一覧を返す(「全カード」なら全件)
+function txPool() {
+  return selectedCard === "all" ? allTx : allTx.filter(t => t.cardName === selectedCard);
+}
+ 
+// 検出されたカードの一覧をもとに、カード切替チップを表示/更新する
+function updateCardSwitch() {
+  const names = [...new Set(allTx.map(t => t.cardName).filter(Boolean))];
+  const sw = document.getElementById("cardSwitch");
+  if (names.length <= 1) {
+    sw.style.display = "none";
+    selectedCard = "all";
+    document.getElementById("cardEyebrow").textContent = names[0] || "全カード";
+    return;
+  }
+  sw.style.display = "flex";
+  const chips = ["all", ...names];
+  sw.innerHTML = chips.map(c =>
+    `<button class="cardChip ${c === selectedCard ? "active" : ""}" data-card="${c.replace(/"/g,"&quot;")}">${c === "all" ? "全カード" : c}</button>`
+  ).join("");
+  document.getElementById("cardEyebrow").textContent = selectedCard === "all" ? "全カード" : selectedCard;
+}
+document.getElementById("cardSwitch").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-card]");
+  if (!btn) return;
+  selectedCard = btn.dataset.card;
+  offset = 0;
+  render();
+});
+ 
 onAuthStateChanged(auth, (user) => {
+  document.getElementById("splashScreen").style.display = "none";
   if (user) {
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("app").style.display = "block";
@@ -599,7 +782,7 @@ onAuthStateChanged(auth, (user) => {
     document.getElementById("bottomNav").style.display = "none";
   }
 });
-
+ 
 function listenToTransactions() {
   document.getElementById("loadingScreen").style.display = "block";
   onSnapshot(collection(db, "transactions"), (snap) => {
@@ -613,6 +796,7 @@ function listenToTransactions() {
         date: new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5]),
         amount: Number(v.amount) || 0,
         merchant: v.merchant || "不明",
+        cardName: v.cardName || "",
       });
     });
     document.getElementById("loadingScreen").style.display = "none";
@@ -621,7 +805,7 @@ function listenToTransactions() {
     document.getElementById("loadingScreen").textContent = "データの読み込みに失敗しました: " + err.message;
   });
 }
-
+ 
 function listenToOverrides() {
   onSnapshot(collection(db, "categoryOverrides"), (snap) => {
     categoryOverrides = {};
@@ -629,7 +813,7 @@ function listenToOverrides() {
     render();
   });
 }
-
+ 
 async function assignCategory(merchant, catKey) {
   categoryOverrides[merchant] = catKey;
   render();
@@ -639,18 +823,19 @@ async function assignCategory(merchant, catKey) {
     showFatalError("カテゴリの保存に失敗しました: " + e.message);
   }
 }
-
+ 
 function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate()+n); return x; }
 function startOfWeek(d) { const x = startOfDay(d); const day = (x.getDay()+6)%7; return addDays(x, -day); }
 function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
 const WEEK_LABELS = ["月","火","水","木","金","土","日"];
 const MONTH_LABELS = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
-
+ 
 function getDayView(off) {
+  const pool = txPool();
   const day = addDays(startOfDay(new Date()), -off);
   const nextDay = addDays(day, 1);
-  const tx = allTx.filter(t => t.date >= day && t.date < nextDay);
+  const tx = pool.filter(t => t.date >= day && t.date < nextDay);
   const label = `${day.getFullYear()}年${day.getMonth()+1}月${day.getDate()}日` + (off===0?"（今日）":off===1?"（昨日）":"");
   const chartData = Array.from({length: 24}, (_, h) => ({
     label: `${h}時`, value: tx.filter(t => t.date.getHours()===h).reduce((s,t)=>s+t.amount,0)
@@ -658,33 +843,35 @@ function getDayView(off) {
   return { label, total: tx.reduce((s,t)=>s+t.amount,0), tx, chartData, chartType: "line" };
 }
 function getWeekView(off) {
+  const pool = txPool();
   const start = addDays(startOfWeek(new Date()), -off*7);
   const end = addDays(start, 7);
-  const tx = allTx.filter(t => t.date >= start && t.date < end);
+  const tx = pool.filter(t => t.date >= start && t.date < end);
   const chartData = WEEK_LABELS.map((label, i) => {
     const dS = addDays(start, i), dE = addDays(dS, 1);
-    return { label, value: allTx.filter(t => t.date>=dS && t.date<dE).reduce((s,t)=>s+t.amount,0) };
+    return { label, value: pool.filter(t => t.date>=dS && t.date<dE).reduce((s,t)=>s+t.amount,0) };
   });
   const label = `${start.getMonth()+1}/${start.getDate()} 〜 ${addDays(end,-1).getMonth()+1}/${addDays(end,-1).getDate()}` + (off===0?"（今週）":"");
   return { label, total: tx.reduce((s,t)=>s+t.amount,0), tx, chartData, chartType: "bar" };
 }
 function getMonthView(off) {
+  const pool = txPool();
   const base = startOfMonth(new Date());
   const target = new Date(base.getFullYear(), base.getMonth()-off, 1);
   const nextMonth = new Date(target.getFullYear(), target.getMonth()+1, 1);
-  const tx = allTx.filter(t => t.date >= target && t.date < nextMonth);
+  const tx = pool.filter(t => t.date >= target && t.date < nextMonth);
   const chartData = MONTH_LABELS.map((label, i) => {
     const mS = new Date(target.getFullYear(), i, 1), mE = new Date(target.getFullYear(), i+1, 1);
-    return { label, value: allTx.filter(t => t.date>=mS && t.date<mE).reduce((s,t)=>s+t.amount,0), highlighted: i===target.getMonth() };
+    return { label, value: pool.filter(t => t.date>=mS && t.date<mE).reduce((s,t)=>s+t.amount,0), highlighted: i===target.getMonth() };
   });
   const label = `${target.getFullYear()}年${target.getMonth()+1}月` + (off===0?"（今月）":"");
   return { label, total: tx.reduce((s,t)=>s+t.amount,0), tx, chartData, chartType: "bar" };
 }
 const VIEW_FNS = { day: getDayView, week: getWeekView, month: getMonthView };
-
+ 
 function detectRecurring() {
   const byMerchant = {};
-  allTx.forEach(t => { (byMerchant[t.merchant] ||= []).push(t); });
+  txPool().forEach(t => { (byMerchant[t.merchant] ||= []).push(t); });
   const results = [];
   Object.entries(byMerchant).forEach(([merchant, list]) => {
     if (list.length < 2) return;
@@ -697,7 +884,7 @@ function detectRecurring() {
   });
   return results.sort((a,b)=>b.count-a.count);
 }
-
+ 
 document.getElementById("tabs").addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-period]");
   if (!btn) return;
@@ -706,7 +893,7 @@ document.getElementById("tabs").addEventListener("click", (e) => {
   [...document.querySelectorAll("#tabs button")].forEach(b => b.classList.toggle("active", b===btn));
   render();
 });
-
+ 
 document.getElementById("bottomNav").addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-page]");
   if (!btn) return;
@@ -715,15 +902,15 @@ document.getElementById("bottomNav").addEventListener("click", (e) => {
     page === "homePage" ? "利用明細" : page === "breakdownPage" ? "内訳" : "設定";
   [...document.querySelectorAll(".bottomNav button")].forEach(b => b.classList.toggle("active", b===btn));
   [...document.querySelectorAll(".page")].forEach(p => p.classList.toggle("active", p.id===page));
-
+ 
   const showPeriodUi = page !== "settingsPage";
   document.getElementById("tabs").style.display = showPeriodUi ? "flex" : "none";
   document.querySelector(".dateNav").style.display = showPeriodUi ? "flex" : "none";
 });
-
+ 
 document.getElementById("prevBtn").addEventListener("click", () => { offset++; render(); });
 document.getElementById("nextBtn").addEventListener("click", () => { if (offset>0) { offset--; render(); } });
-
+ 
 document.getElementById("dayPicker").addEventListener("change", (e) => {
   if (!e.target.value) return;
   const picked = new Date(e.target.value + "T00:00:00");
@@ -734,13 +921,13 @@ document.getElementById("periodPicker").addEventListener("change", (e) => {
   offset = Number(e.target.value);
   render();
 });
-
+ 
 function updateDateNav() {
   const dayPicker = document.getElementById("dayPicker");
   const periodPicker = document.getElementById("periodPicker");
   dayPicker.style.display = period === "day" ? "block" : "none";
   periodPicker.style.display = period === "day" ? "none" : "block";
-
+ 
   if (period === "day") {
     const d = addDays(startOfDay(new Date()), -offset);
     dayPicker.value = d.toISOString().slice(0,10);
@@ -759,36 +946,41 @@ function updateDateNav() {
   }
   document.getElementById("nextBtn").disabled = offset === 0;
 }
-
+ 
 function render() {
   try {
     updateDateNav();
-
+    updateCardSwitch();
+ 
     if (allTx.length === 0) {
       document.getElementById("periodLabel").textContent = "";
       document.getElementById("totalAmount").textContent = yen(0);
+      document.getElementById("milesLine").textContent = "獲得マイル(目安): 0マイル";
       document.getElementById("txCard").innerHTML = '<div class="empty">JCBの利用があると自動で表示されます</div>';
       document.getElementById("catCard").innerHTML = '<div class="empty">データがまだありません</div>';
       document.getElementById("merchantCard").innerHTML = '<div class="empty">データがまだありません</div>';
       document.getElementById("recurringSection").style.display = "none";
+      renderPayment();
       if (chart) { chart.destroy(); chart = null; }
       return;
     }
-
+ 
     const view = VIEW_FNS[period](offset);
     document.getElementById("periodLabel").textContent = view.label;
     document.getElementById("totalAmount").textContent = yen(view.total);
+    document.getElementById("milesLine").textContent = `獲得マイル(目安): ${estimateMiles(view.total).toLocaleString("ja-JP")}マイル`;
     document.getElementById("historyLabel").textContent =
       period === "day" ? "この日の利用履歴" : period === "week" ? "この週の利用履歴" : "この月の利用履歴";
-
+ 
     renderChartSafe(view);
     renderHistory(view);
     renderBreakdown(view);
+    renderPayment();
   } catch (e) {
     showFatalError("render()エラー: " + e.message + "\n" + (e.stack || ""));
   }
 }
-
+ 
 function renderChartSafe(view) {
   try {
     if (typeof Chart === "undefined") {
@@ -800,11 +992,11 @@ function renderChartSafe(view) {
     showFatalError("グラフ描画エラー: " + e.message);
   }
 }
-
+ 
 function renderChart(view) {
   const ctx = document.getElementById("periodChart").getContext("2d");
   if (chart) chart.destroy();
-
+ 
   const isLine = view.chartType === "line";
   chart = new Chart(ctx, {
     type: isLine ? "line" : "bar",
@@ -849,7 +1041,7 @@ function renderChart(view) {
     }
   });
 }
-
+ 
 function renderHistory(view) {
   const txCard = document.getElementById("txCard");
   const list = view.tx.slice().sort((a,b)=>b.date-a.date);
@@ -874,7 +1066,7 @@ function renderHistory(view) {
       </div>`;
   }).join("");
 }
-
+ 
 function renderBreakdown(view) {
   const catTotals = {}, merchantTotals = {};
   view.tx.forEach(t => {
@@ -882,7 +1074,7 @@ function renderBreakdown(view) {
     catTotals[cat.key] = (catTotals[cat.key]||0) + t.amount;
     merchantTotals[t.merchant] = (merchantTotals[t.merchant]||0) + t.amount;
   });
-
+ 
   const catCard = document.getElementById("catCard");
   const catEntries = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
   if (catEntries.length === 0) {
@@ -901,7 +1093,7 @@ function renderBreakdown(view) {
         </div>`;
     }).join("");
   }
-
+ 
   const merchantCard = document.getElementById("merchantCard");
   const merchantEntries = Object.entries(merchantTotals).sort((a,b)=>b[1]-a[1]);
   if (merchantEntries.length === 0) {
@@ -933,7 +1125,7 @@ function renderBreakdown(view) {
           ${selectHtml}
         </div>`;
     }).join("");
-
+ 
     merchantCard.querySelectorAll(".catAssignSelect").forEach(sel => {
       sel.addEventListener("change", (e) => {
         if (!e.target.value) return;
@@ -941,7 +1133,7 @@ function renderBreakdown(view) {
       });
     });
   }
-
+ 
   const recurring = detectRecurring();
   const recurringSection = document.getElementById("recurringSection");
   if (recurring.length === 0) {
@@ -967,3 +1159,4 @@ function renderBreakdown(view) {
 </script>
 </body>
 </html>
+ 
